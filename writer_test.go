@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/onur1/binproto"
+	"github.com/tetsuo/binproto"
 )
 
 func TestSend(t *testing.T) {

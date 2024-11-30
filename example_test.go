@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/onur1/binproto"
+	"github.com/tetsuo/binproto"
 )
 
 func ExampleDial() {

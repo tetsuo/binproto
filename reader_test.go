@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/onur1/binproto"
+	"github.com/tetsuo/binproto"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -1,20 +1,13 @@
-
 # binproto
 
 `binproto` is a lightweight Go library designed to facilitate low-level binary protocol communication. It enables efficient, multiplexed messaging, making it well-suited for network applications requiring reliable and fast binary data exchange.
-
-## Features
-
-- **Multiplexed Channels**: Supports multiple channels over a single connection.
-- **Efficient Framing**: Provides an efficient and easy-to-use binary framing mechanism.
-- **Customizable Buffers**: Allows control over buffer sizes for optimized performance.
 
 ## Installation
 
 Install `binproto` by running:
 
 ```sh
-go get github.com/onur1/binproto
+go get github.com/tetsuo/binproto
 ```
 
 ## Usage
@@ -27,7 +20,7 @@ package main
 import (
     "log"
     "net"
-    "github.com/onur1/binproto"
+    "github.com/tetsuo/binproto"
 )
 
 func main() {
