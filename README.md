@@ -1,6 +1,6 @@
 # binproto
 
-`binproto` provides binary message framing using a length-prefixed format and supports multiplexed streams.
+binproto provides binary message framing using a length-prefixed format and supports multiplexed streams.
 
 ## Install
 
@@ -14,7 +14,7 @@ To start exchanging messages with binproto, simply wrap a `net.Conn` with a `bin
 
 Then, once connected, use `ReadMessage()` to read incoming messages and `Send()` to send new ones over the network.
 
-#### Server:
+#### Server
 
 ```go
 package main
@@ -89,7 +89,7 @@ func (s *server) close() error {
 }
 ```
 
-#### Client:
+#### Client
 
 ```go
 package main
