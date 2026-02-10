@@ -1,9 +1,11 @@
-package binproto
+package binproto_test
 
 import (
 	"bufio"
 	"bytes"
 	"testing"
+
+	"github.com/tetsuo/binproto"
 )
 
 func BenchmarkWriter_64B(b *testing.B) {
@@ -20,12 +22,11 @@ func BenchmarkWriter_1MB(b *testing.B) {
 
 func benchWriter(b *testing.B, payloadSize int) {
 	payload := make([]byte, payloadSize)
-	msg := NewMessage(1, 'X', payload)
+	msg := binproto.NewMessage(1, 'X', payload)
 
 	buf := new(bytes.Buffer)
 	bw := bufio.NewWriter(buf)
-	w := NewWriter(bw)
-
+	w := binproto.NewWriter(bw)
 	b.SetBytes(int64(payloadSize))
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -53,10 +54,10 @@ func BenchmarkReader_1MB(b *testing.B) {
 func benchReader(b *testing.B, payloadSize int) {
 	// Encode message once
 	payload := make([]byte, payloadSize)
-	msg := NewMessage(1, 'X', payload)
+	msg := binproto.NewMessage(1, 'X', payload)
 	buf := new(bytes.Buffer)
 	bw := bufio.NewWriter(buf)
-	w := NewWriter(bw)
+	w := binproto.NewWriter(bw)
 	w.WriteMessage(msg)
 	bw.Flush()
 	encoded := buf.Bytes()
@@ -68,14 +69,16 @@ func benchReader(b *testing.B, payloadSize int) {
 	}
 
 	source := &repeatReader{data: encoded}
-	reader := NewReaderSize(source, bufSize)
+	reader := binproto.NewReaderSize(source, bufSize)
 
 	b.SetBytes(int64(payloadSize))
 	b.ReportAllocs()
 	b.ResetTimer()
 
+	m := &binproto.Message{}
+
 	for i := 0; i < b.N; i++ {
-		_, err := reader.ReadMessage()
+		err := reader.ReadMessage(m)
 		if err != nil {
 			b.Fatal(err)
 		}
