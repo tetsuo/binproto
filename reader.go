@@ -19,7 +19,6 @@ type Reader struct {
 	header   uint64
 	length   int
 	consumed int
-	messages []*Message
 	latest   []byte
 	missing  int
 }
@@ -38,9 +37,7 @@ var (
 
 // NewReader returns a new Reader reading from r.
 //
-// By default, a Reader allocates `4096` bytes for its internal buffer,
-// and will process what's inside the buffer as long as its size
-// is greater than this limit.
+// By default, a Reader allocates 4096 bytes for its internal buffer.
 func NewReader(rd io.Reader) *Reader {
 	return NewReaderSize(rd, defaultBufSize)
 }
@@ -106,8 +103,9 @@ func (b *Reader) ReadMessage() (message *Message, err error) {
 		}
 
 		// Found message?
-		if len(b.messages) > 0 {
-			message, b.messages = b.messages[0], b.messages[1:]
+		if b.state == 0 && b.latest != nil {
+			message = NewMessage(int(b.header>>4), rune(b.header&0b1111), b.latest)
+			b.latest = nil
 			b.missing = 0
 			copy(b.buf, b.buf[b.r:b.w])
 			b.w -= b.r
@@ -192,8 +190,6 @@ func (b *Reader) next() bool {
 		return true
 	case 2:
 		b.state = 0
-		b.messages = append(b.messages, NewMessage(int(b.header>>4), rune(b.header&0b1111), b.latest))
-		b.latest = nil
 
 		return b.err == nil
 	default:
