@@ -208,7 +208,7 @@ func (b *Reader) readMessage() int {
 		if b.latest != nil {
 			copy(b.latest[len(b.latest)-b.length:], data[offset:])
 		} else {
-			b.latest = make([]byte, (offset+b.length)-offset)
+			b.latest = make([]byte, b.length)
 			copy(b.latest, data[offset:offset+b.length])
 		}
 
