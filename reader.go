@@ -56,9 +56,7 @@ func NewReaderSize(rd io.Reader, size int) *Reader {
 
 func (b *Reader) fill() {
 	if b.r > 0 {
-		if b.r != b.w {
-			copy(b.buf, b.buf[b.r:b.w])
-		}
+		copy(b.buf, b.buf[b.r:b.w])
 		b.w -= b.r
 		b.r = 0
 	}
@@ -207,16 +205,6 @@ func (b *Reader) readMessage() int {
 	data, offset := b.buf[:b.w], b.r
 	length := len(data)
 
-	// Ensure b.latest has enough capacity for the full body.
-	totalLen := b.latestN + b.length
-	if cap(b.latest) < totalLen {
-		newBuf := make([]byte, totalLen)
-		if b.latestN > 0 {
-			copy(newBuf, b.latest[:b.latestN])
-		}
-		b.latest = newBuf
-	}
-
 	free := length - offset
 	if free >= b.length {
 		copy(b.latest[b.latestN:], data[offset:offset+b.length])
@@ -271,14 +259,14 @@ func (b *Reader) readErr() error {
 
 func (b *Reader) reset(buf []byte, r io.Reader) {
 	latest := b.latest
-	if latest == nil {
-		latest = make([]byte, 0)
+	if cap(latest) < len(buf) {
+		latest = make([]byte, len(buf))
 	}
 	*b = Reader{
 		rd:     r,
 		buf:    buf,
 		size:   len(buf),
 		shift:  0,
-		latest: latest[:0],
+		latest: latest[:cap(latest)],
 	}
 }
