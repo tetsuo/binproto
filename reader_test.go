@@ -1,11 +1,13 @@
 package binproto_test
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"math"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
@@ -444,13 +446,13 @@ func newBytes(id uint64, ch uint8, l int, start, end int) []byte {
 }
 
 func fill(times int) string {
-	s := ""
+	var s strings.Builder
 	chars := "abcdefghijklmnopqrstuvwxyz"
 	for i := 0; i < times; i++ {
 		pos := i % len(chars)
-		s += chars[pos : pos+1]
+		s.WriteString(chars[pos : pos+1])
 	}
-	return s
+	return s.String()
 }
 
 func runTest(t *testing.T, tt testCase) {
@@ -624,4 +626,65 @@ func send(id uint64, ch uint8, data []byte) []byte {
 	n += binary.PutUvarint(payload[n:], header)
 	copy(payload[n:], data)
 	return payload
+}
+
+func TestReaderReset(t *testing.T) {
+	initialData := newBytes(42, 3, 5, 0, 0)
+	r := binproto.NewReaderSize(bytes.NewReader(initialData), 64)
+
+	m := &binproto.Message{}
+	err := r.ReadMessage(m)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(42), m.ID)
+
+	newData := newBytes(99, 7, 10, 0, 0)
+	r.Reset(bytes.NewReader(newData))
+
+	err = r.ReadMessage(m)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(99), m.ID)
+	assert.Equal(t, uint8(7), m.Channel)
+	assert.Equal(t, 10, len(m.Data))
+}
+
+func TestReaderResetNilBuffer(t *testing.T) {
+	r := &binproto.Reader{}
+	data := newBytes(42, 3, 5, 0, 0)
+	r.Reset(bytes.NewReader(data))
+
+	m := &binproto.Message{}
+	err := r.ReadMessage(m)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(42), m.ID)
+}
+
+// Test varint overflow: header varint with 11 continuation bytes triggers ErrMessageMalformed.
+// A valid 1-byte length varint is followed by 11 bytes with the continuation bit set.
+// readVarint processes all 11 bytes in one pass, then the consumed >= 11 check fires.
+func TestReadVarintOverflow(t *testing.T) {
+	buf := make([]byte, 12)
+	buf[0] = 20 // valid length varint (single byte, < 128)
+	for i := 1; i <= 11; i++ {
+		buf[i] = 0xFF // continuation bit set
+	}
+
+	r := binproto.NewReaderSize(bytes.NewReader(buf), 64)
+	m := &binproto.Message{}
+	err := r.ReadMessage(m)
+	assert.Equal(t, binproto.ErrMessageMalformed, err)
+}
+
+// Test message size exceeding max
+func TestMessageSizeExceeded(t *testing.T) {
+	maxSize := 8 * 1024 * 1024
+	buf := make([]byte, 20)
+	totalLen := uint64(maxSize + 1000)
+	n := binary.PutUvarint(buf, totalLen)
+	header := uint64(42<<4 | 3)
+	n += binary.PutUvarint(buf[n:], header)
+
+	r := binproto.NewReaderSize(bytes.NewReader(buf[:n]), 4096)
+	m := &binproto.Message{}
+	err := r.ReadMessage(m)
+	assert.Equal(t, binproto.ErrMessageSizeExceeded, err)
 }
