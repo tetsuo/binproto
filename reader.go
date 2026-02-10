@@ -20,7 +20,9 @@ type Reader struct {
 	length   int
 	consumed int
 	latest   []byte
+	latestN  int
 	missing  int
+	ready    bool
 }
 
 const (
@@ -103,11 +105,12 @@ func (b *Reader) ReadMessage(message *Message) (err error) {
 		}
 
 		// Found message?
-		if b.state == 0 && b.latest != nil {
+		if b.state == 0 && b.ready {
 			message.ID = b.header >> 4
 			message.Channel = uint8(b.header & 0b1111)
-			message.Data = b.latest
-			b.latest = nil
+			message.Data = b.latest[:b.latestN]
+			b.ready = false
+			b.latestN = 0
 			b.missing = 0
 			copy(b.buf, b.buf[b.r:b.w])
 			b.w -= b.r
@@ -192,6 +195,7 @@ func (b *Reader) next() bool {
 		return true
 	case 2:
 		b.state = 0
+		b.ready = true
 
 		return b.err == nil
 	default:
@@ -203,15 +207,20 @@ func (b *Reader) readMessage() int {
 	data, offset := b.buf[:b.w], b.r
 	length := len(data)
 
+	// Ensure b.latest has enough capacity for the full body.
+	totalLen := b.latestN + b.length
+	if cap(b.latest) < totalLen {
+		newBuf := make([]byte, totalLen)
+		if b.latestN > 0 {
+			copy(newBuf, b.latest[:b.latestN])
+		}
+		b.latest = newBuf
+	}
+
 	free := length - offset
 	if free >= b.length {
-		if b.latest != nil {
-			copy(b.latest[len(b.latest)-b.length:], data[offset:])
-		} else {
-			b.latest = make([]byte, b.length)
-			copy(b.latest, data[offset:offset+b.length])
-		}
-
+		copy(b.latest[b.latestN:], data[offset:offset+b.length])
+		b.latestN += b.length
 		offset += b.length
 
 		if b.next() {
@@ -221,12 +230,8 @@ func (b *Reader) readMessage() int {
 		return length
 	}
 
-	if b.latest == nil {
-		b.latest = make([]byte, b.length)
-	}
-
-	copy(b.latest[len(b.latest)-b.length:], data[offset:])
-
+	copy(b.latest[b.latestN:], data[offset:offset+free])
+	b.latestN += free
 	b.length -= free
 
 	return length
@@ -265,10 +270,15 @@ func (b *Reader) readErr() error {
 }
 
 func (b *Reader) reset(buf []byte, r io.Reader) {
+	latest := b.latest
+	if latest == nil {
+		latest = make([]byte, 0)
+	}
 	*b = Reader{
-		rd:    r,
-		buf:   buf,
-		size:  len(buf),
-		shift: 0,
+		rd:     r,
+		buf:    buf,
+		size:   len(buf),
+		shift:  0,
+		latest: latest[:0],
 	}
 }
