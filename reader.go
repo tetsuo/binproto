@@ -93,7 +93,7 @@ func (b *Reader) fill() {
 }
 
 // ReadMessage reads a single message from r.
-func (b *Reader) ReadMessage() (message *Message, err error) {
+func (b *Reader) ReadMessage(message *Message) (err error) {
 	for {
 		if b.err != nil {
 			message = nil
@@ -104,7 +104,9 @@ func (b *Reader) ReadMessage() (message *Message, err error) {
 
 		// Found message?
 		if b.state == 0 && b.latest != nil {
-			message = NewMessage(int(b.header>>4), rune(b.header&0b1111), b.latest)
+			message.ID = int(b.header >> 4)
+			message.Channel = rune(b.header & 0b1111)
+			message.Data = b.latest
 			b.latest = nil
 			b.missing = 0
 			copy(b.buf, b.buf[b.r:b.w])

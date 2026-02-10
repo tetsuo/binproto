@@ -19,8 +19,9 @@ func ExampleDial() {
 		}
 
 		go func() {
+			msg := &binproto.Message{}
 			for {
-				msg, err := c.ReadMessage()
+				err := c.ReadMessage(msg)
 				if err != nil {
 					log.Fatal(err)
 					return
@@ -56,8 +57,9 @@ func (s *server) handle(conn net.Conn) {
 
 	c := binproto.NewConn(conn)
 
+	msg := &binproto.Message{}
 	for {
-		msg, err := c.ReadMessage()
+		err := c.ReadMessage(msg)
 		if err != nil {
 			fmt.Printf("error: %v", err)
 			return

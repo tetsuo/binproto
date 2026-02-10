@@ -1,8 +1,6 @@
 package binproto_test
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -11,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tetsuo/binproto"
 	"github.com/stretchr/testify/assert"
+	"github.com/tetsuo/binproto"
 )
 
 type testCase struct {
@@ -410,29 +408,6 @@ func TestReadMessage(t *testing.T) {
 	}
 }
 
-func BenchmarkReadMessage(b *testing.B) {
-	b.ReportAllocs()
-
-	var buf bytes.Buffer
-	br := bufio.NewReader(&buf)
-	r := binproto.NewReaderSize(br, 256)
-	data := []byte(fill(56))
-
-	for i := 0; i < b.N; i++ {
-		id := i % maxID
-		ch := rune(i % 16)
-
-		buf.Write(send(id, ch, data))
-		m, err := r.ReadMessage()
-		if err != nil {
-			b.Fatal(err)
-		}
-		if m.ID != id || m.Channel != ch || string(m.Data) != string(data) {
-			b.Fatal(fmt.Sprintf("expected: %d %d %s, got: %d %d %s", id, ch, string(data), m.ID, m.Channel, string(m.Data)))
-		}
-	}
-}
-
 type testReader struct {
 	q [][]byte
 }
@@ -483,14 +458,15 @@ func runTest(t *testing.T, tt testCase) {
 	if len(tt.expect) < 1 {
 		panic("must expect a result")
 	}
+	m := &binproto.Message{}
 	for _, v := range tt.expect {
-		res, err := r.ReadMessage()
+		err := r.ReadMessage(m)
 		if expectedErr, ok := v.(error); ok {
 			assert.EqualError(t, err, expectedErr.Error(), tt.desc)
 		} else {
 			assert.Nil(t, err)
 			if expectedMessage, ok := v.(*binproto.Message); ok {
-				assert.EqualValues(t, expectedMessage, res, tt.desc)
+				assert.EqualValues(t, expectedMessage, m, tt.desc)
 			} else {
 				t.Fail()
 			}
