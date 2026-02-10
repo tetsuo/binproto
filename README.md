@@ -8,7 +8,7 @@ Simple binary messaging protocol with multiplexing support.
 
 ```
 ┌──────────────────────────────────────────────┐
-│ length | channel ID × channel type │ payload │
+│ length | channel ID × message type │ payload │
 └──────────────────────────────────────────────┘
            └─ 60-bits   └─ 4-bits
 ```

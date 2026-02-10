@@ -430,9 +430,9 @@ func reader(q [][]byte, size int) *binproto.Reader {
 
 func newMessage(id uint64, ch uint8, l int) *binproto.Message {
 	return &binproto.Message{
-		ID:      id,
-		Channel: ch,
-		Data:    []byte(fill(l)),
+		ID:   id,
+		Type: ch,
+		Data: []byte(fill(l)),
 	}
 }
 
@@ -643,7 +643,7 @@ func TestReaderReset(t *testing.T) {
 	err = r.ReadMessage(m)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(99), m.ID)
-	assert.Equal(t, uint8(7), m.Channel)
+	assert.Equal(t, uint8(7), m.Type)
 	assert.Equal(t, 10, len(m.Data))
 }
 

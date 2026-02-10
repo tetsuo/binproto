@@ -20,7 +20,7 @@ func NewWriter(wd *bufio.Writer) *Writer {
 // WriteMessage writes a variable number of messages to w.
 func (w *Writer) WriteMessage(messages ...*Message) error {
 	for _, m := range messages {
-		header := m.ID<<4 | uint64(m.Channel)
+		header := m.ID<<4 | uint64(m.Type)
 		headerLen := binary.PutUvarint(w.scratch[10:], header)
 		bodyLen := uint64(headerLen + len(m.Data))
 		lengthSize := binary.PutUvarint(w.scratch[:10], bodyLen)

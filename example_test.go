@@ -27,7 +27,7 @@ func ExampleDial() {
 					return
 				}
 
-				fmt.Printf("%d %d %s\n", msg.ID, msg.Channel, msg.Data)
+				fmt.Printf("%d %d %s\n", msg.ID, msg.Type, msg.Data)
 
 				s.close()
 			}
@@ -65,7 +65,7 @@ func (s *server) handle(conn net.Conn) {
 			return
 		}
 
-		fmt.Printf("%d %d %s\n", msg.ID, msg.Channel, msg.Data)
+		fmt.Printf("%d %d %s\n", msg.ID, msg.Type, msg.Data)
 
 		_, err = c.Send(binproto.NewMessage(112, 5, []byte("hey")))
 		if err != nil {

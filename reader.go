@@ -105,7 +105,7 @@ func (b *Reader) ReadMessage(message *Message) (err error) {
 		// Found message?
 		if b.state == 0 && b.ready {
 			message.ID = b.header >> 4
-			message.Channel = uint8(b.header & 0b1111)
+			message.Type = uint8(b.header & 0b1111)
 			message.Data = b.latest[:b.latestN]
 			b.ready = false
 			b.latestN = 0

@@ -44,7 +44,7 @@ func TestWriteMessageNilData(t *testing.T) {
 	err = r.ReadMessage(m)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(100), m.ID)
-	assert.Equal(t, uint8(5), m.Channel)
+	assert.Equal(t, uint8(5), m.Type)
 	assert.Equal(t, 0, len(m.Data))
 }
 
