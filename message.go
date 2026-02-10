@@ -6,13 +6,13 @@ package binproto
 // unsigned 64-bit integer which consists of an ID (first 60-bits) and
 // a Channel number (last 4-bits), the rest of the message is payload.
 type Message struct {
-	ID      int
-	Channel rune
+	ID      uint64
+	Channel uint8
 	Data    []byte
 }
 
 // NewMessage returns a new Message.
-func NewMessage(id int, ch rune, data []byte) *Message {
+func NewMessage(id uint64, ch uint8, data []byte) *Message {
 	return &Message{
 		ID:      id,
 		Channel: ch,
