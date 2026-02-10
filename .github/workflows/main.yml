@@ -1,13 +1,25 @@
-name: build
+name: release
 
-on: [pull_request, push]
-
+concurrency:
+  group: release-${{ github.head_ref }}
+  cancel-in-progress: true
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Impact"
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - minor
+        - patch
 jobs:
   linux:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [1.24.x]
+        go-version: [1.25.x]
 
     steps:
     - name: Set up Go
@@ -24,58 +36,78 @@ jobs:
     - name: Run tests
       run: go test ./...
 
-    - name: Tag new version
-      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    - name: Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         set -euxo pipefail
+
+        MAJOR=$(echo "$GITHUB_REF_NAME" | sed -nE 's/^v([0-9]+)\.x$/\1/p')
+        if [[ -z "$MAJOR" ]]; then
+          echo "Invalid branch name format (expected vX.x)" >&2
+          exit 1
+        fi
+
         next_version () {
-          local current
-          local impact
-          local MAJOR
-          local MINOR
-          local PATCH
-          local parts
-          impact="$1"
-          if [ -z "$1" ]
-          then
-            impact="patch"
-          fi
-          current=$(git tag | sort -r | grep "^v[0-9]*\.[0-9]*\.[0-9]" | sort -t "." -k1,1nr -k2,2nr -k3,3nr | cut -c2- | head -1 2> /dev/null) || true
+          local current impact MINOR PATCH
+          impact="${1:-patch}"
+
+          current=$(git tag | grep "^v$MAJOR\.[0-9]*\.[0-9]*" | sort -t "." -k1,1nr -k2,2nr -k3,3nr | cut -c2- | head -1) || true
+
           if [[ -z "$current" ]]; then
-            current='0.0.0'
+            if [[ "$MAJOR" -eq 0 ]]; then
+              echo "0.1.0"
+            else
+              echo "$MAJOR.0.0"
+            fi
+            return
           fi
-          parts=(${current//./ })
-          MAJOR=${parts[0]}
-          MINOR=${parts[1]}
-          PATCH=${parts[2]}
+
+          IFS='.' read -r _ MINOR PATCH <<< "$current"
+
           case "$impact" in
             major)
               ((MAJOR+=1))
+              MINOR=0
+              PATCH=0
               ;;
             minor)
               ((MINOR+=1))
+              PATCH=0
               ;;
             patch)
               ((PATCH+=1))
               ;;
+            *)
+              echo "Invalid impact: $impact" >&2
+              exit 1
+              ;;
           esac
+
           echo "$MAJOR.$MINOR.$PATCH"
         }
-        tag_and_release () {
-          local commit
+
+        push_release () {
+          local commit next
+
           commit=$(git rev-parse HEAD)
-          local next
-          if [[ -z "$(git describe --contains "$commit" 2>/dev/null)" ]]; then
-            next="v$(next_version "$1")"
-            git tag "$next"
-            git config user.name github-actions
-            git config user.email github-actions@github.com
-            git push --tags
-            echo "RELEASE_TAG=$next" >> $GITHUB_ENV
+
+          if git tag --points-at "$commit" | grep -q .; then
+            echo "Commit already tagged, skipping release"
+            return
           fi
+
+          next="v$(next_version "${1:-patch}")"
+
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          git tag "$next"
+          git push --tags
+
+          echo "BUILD_VERSION=$next" >> "$GITHUB_ENV"
         }
 
         git fetch --all --tags
-        tag_and_release patch
+
+        push_release minor
