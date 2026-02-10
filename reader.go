@@ -14,7 +14,7 @@ type Reader struct {
 	size     int
 	err      error
 	state    int
-	factor   uint64
+	shift    uint
 	varint   uint64
 	header   uint64
 	length   int
@@ -163,7 +163,7 @@ func (b *Reader) next() bool {
 	switch b.state {
 	case 0:
 		b.state = 1
-		b.factor = 1
+		b.shift = 0
 		b.length = int(b.varint)
 		b.consumed = 0
 		b.varint = 0
@@ -174,7 +174,7 @@ func (b *Reader) next() bool {
 		return true
 	case 1:
 		b.state = 2
-		b.factor = 1
+		b.shift = 0
 		b.header = b.varint
 		b.length -= b.consumed
 		b.consumed = 0
@@ -236,7 +236,7 @@ func (b *Reader) readVarint() int {
 	data, offset := b.buf[:b.w], b.r
 
 	for ; offset < len(data); offset++ {
-		b.varint += uint64(data[offset]&127) * b.factor
+		b.varint |= uint64(data[offset]&0x7F) << b.shift
 		b.consumed += 1
 
 		if data[offset] < 128 {
@@ -248,7 +248,7 @@ func (b *Reader) readVarint() int {
 			return len(data)
 		}
 
-		b.factor *= 128
+		b.shift += 7
 	}
 
 	if b.consumed >= 11 {
@@ -266,9 +266,9 @@ func (b *Reader) readErr() error {
 
 func (b *Reader) reset(buf []byte, r io.Reader) {
 	*b = Reader{
-		rd:     r,
-		buf:    buf,
-		size:   len(buf),
-		factor: 1,
+		rd:    r,
+		buf:   buf,
+		size:  len(buf),
+		shift: 0,
 	}
 }
