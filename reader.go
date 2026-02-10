@@ -104,8 +104,8 @@ func (b *Reader) ReadMessage(message *Message) (err error) {
 
 		// Found message?
 		if b.state == 0 && b.latest != nil {
-			message.ID = int(b.header >> 4)
-			message.Channel = rune(b.header & 0b1111)
+			message.ID = b.header >> 4
+			message.Channel = uint8(b.header & 0b1111)
 			message.Data = b.latest
 			b.latest = nil
 			b.missing = 0

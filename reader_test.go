@@ -20,7 +20,7 @@ type testCase struct {
 	size   int
 }
 
-var maxID = int(math.Pow(2, 60)) - 1
+var maxID = uint64(math.Pow(2, 60)) - 1
 
 func TestReadMessage(t *testing.T) {
 	// Run test cases in normal and reversed order.
@@ -55,10 +55,10 @@ func TestReadMessage(t *testing.T) {
 		bufferSize := 16
 
 		id := maxID
-		for i := 1; id > 0; id = id / (i * 2) {
+		for i := 1; id > 0; id = id / uint64(i*2) {
 			i++
-			messages = append(messages, newMessage(id, rune(i%15), 0))
-			bytes = append(bytes, newBytes(id, rune(i%15), 0, 0, 0))
+			messages = append(messages, newMessage(id, uint8(i%15), 0))
+			bytes = append(bytes, newBytes(id, uint8(i%15), 0, 0, 0))
 		}
 
 		test("header only", messages, bytes, bufferSize)
@@ -72,11 +72,11 @@ func TestReadMessage(t *testing.T) {
 		bufferSize := 16
 
 		id := maxID
-		for i := 1; id > 0; id = id / (i * 2) {
+		for i := 1; id > 0; id = id / uint64(i*2) {
 			i++
-			b := newBytes(id, rune(i%15), 0, 0, 0)
-			messages = append(messages, newMessage(id, rune(i%15), bufferSize-len(b)))
-			bytes = append(bytes, newBytes(id, rune(i%15), bufferSize-len(b), 0, 0))
+			b := newBytes(id, uint8(i%15), 0, 0, 0)
+			messages = append(messages, newMessage(id, uint8(i%15), bufferSize-len(b)))
+			bytes = append(bytes, newBytes(id, uint8(i%15), bufferSize-len(b), 0, 0))
 		}
 
 		test("with payload buffer full", messages, bytes, bufferSize)
@@ -90,11 +90,11 @@ func TestReadMessage(t *testing.T) {
 		bufferSize := 16
 
 		id := maxID
-		for i := 1; id > 0; id = id / (i * 2) {
+		for i := 1; id > 0; id = id / uint64(i*2) {
 			i++
-			b := newBytes(id, rune(i%15), 0, 0, 0)
-			messages = append(messages, newMessage(id, rune(i%15), (bufferSize-len(b))/2))
-			bytes = append(bytes, newBytes(id, rune(i%15), (bufferSize-len(b))/2, 0, 0))
+			b := newBytes(id, uint8(i%15), 0, 0, 0)
+			messages = append(messages, newMessage(id, uint8(i%15), (bufferSize-len(b))/2))
+			bytes = append(bytes, newBytes(id, uint8(i%15), (bufferSize-len(b))/2, 0, 0))
 		}
 
 		test("with payload buffer half empty", messages, bytes, bufferSize)
@@ -244,8 +244,8 @@ func TestReadMessage(t *testing.T) {
 				)
 			}(),
 			reads: func() [][]byte {
-				b1 := newBytes(0, rune(1), 2, 0, 0)
-				b2 := newBytes(42, rune(3), 14, 0, 0)
+				b1 := newBytes(0, 1, 2, 0, 0)
+				b2 := newBytes(42, 3, 14, 0, 0)
 
 				return reading(b1, b2)
 			}(),
@@ -260,8 +260,8 @@ func TestReadMessage(t *testing.T) {
 				)
 			}(),
 			reads: func() [][]byte {
-				b1 := newBytes(0, rune(1), 2, 0, 0)
-				b2 := newBytes(42, rune(3), 14, 0, 0)
+				b1 := newBytes(0, 1, 2, 0, 0)
+				b2 := newBytes(42, 3, 14, 0, 0)
 				b := append(b1, b2...)
 				xs := chunksOf(b, 2)
 				return reading(xs...)
@@ -426,7 +426,7 @@ func reader(q [][]byte, size int) *binproto.Reader {
 	return binproto.NewReaderSize(&testReader{q: q}, size)
 }
 
-func newMessage(id int, ch rune, l int) *binproto.Message {
+func newMessage(id uint64, ch uint8, l int) *binproto.Message {
 	return &binproto.Message{
 		ID:      id,
 		Channel: ch,
@@ -434,7 +434,7 @@ func newMessage(id int, ch rune, l int) *binproto.Message {
 	}
 }
 
-func newBytes(id int, ch rune, l int, start, end int) []byte {
+func newBytes(id uint64, ch uint8, l int, start, end int) []byte {
 	out := send(id, ch, []byte(fill(l)))
 	if end == 0 {
 		return out[start:]
@@ -613,11 +613,11 @@ func encodingLength(i uint64) int {
 	return 10
 }
 
-func send(id int, ch rune, data []byte) []byte {
+func send(id uint64, ch uint8, data []byte) []byte {
 	if id > maxID {
 		panic("binproto: ID too big")
 	}
-	header := uint64(id)<<4 | uint64(ch)
+	header := id<<4 | uint64(ch)
 	length := len(data) + encodingLength(header)
 	payload := make([]byte, encodingLength(uint64(length))+length)
 	n := binary.PutUvarint(payload, uint64(length))
