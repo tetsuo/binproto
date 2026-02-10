@@ -1,6 +1,8 @@
 # binproto
 
-binproto provides binary message framing using a length-prefixed format and supports multiplexed streams.
+Simple binary protocol with multiplexing support.
+
+[![Go Reference](https://pkg.go.dev/badge/github.com/tetsuo/binproto.svg)](https://pkg.go.dev/github.com/tetsuo/binproto)
 
 ## Install
 
@@ -43,9 +45,9 @@ type server struct {
 func (s *server) handle(conn net.Conn) {
     defer conn.Close()
     c := binproto.NewConn(conn)
-
+    msg := &binproto.Message{}
     for {
-        msg, err := c.ReadMessage()
+        err := c.ReadMessage(msg)
         if err != nil {
             fmt.Printf("error: %v", err)
             return
@@ -110,8 +112,9 @@ func main() {
 
     // Start a goroutine to read and print incoming messages from the server
     go func() {
+        msg := &binproto.Message{}
         for {
-            msg, err := c.ReadMessage()
+            err := c.ReadMessage(msg)
             if err != nil {
                 log.Fatal(err)
                 return
