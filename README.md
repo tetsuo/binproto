@@ -1,12 +1,10 @@
 # binproto
 
-Simple binary protocol with multiplexing support.
+Simple binary messaging protocol with multiplexing support.
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/tetsuo/binproto.svg)](https://pkg.go.dev/github.com/tetsuo/binproto)
 
 ## Message structure
-
-Every message is encoded with a 64-bit header: a length prefix followed by a channel ID and type.
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -16,8 +14,6 @@ Every message is encoded with a 64-bit header: a length prefix followed by a cha
 ```
 
 ## Benchmarks
-
-With the default 4 kB buffers, binproto achieves a throughput of approximately 50 GB/s for both writing and reading operations.
 
 ```
 goos: darwin
