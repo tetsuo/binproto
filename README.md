@@ -9,20 +9,15 @@ Simple binary protocol with multiplexing support.
 Every message is encoded with a 64-bit header: a length prefix followed by a channel ID and type.
 
 ```
-╔──────────────────────────────────────────────╗
+┌──────────────────────────────────────────────┐
 │ length | channel ID × channel type │ payload │
-╚──────────────────────────────────────────────╝
+└──────────────────────────────────────────────┘
            └─ 60-bits   └─ 4-bits
 ```
 
-* **Channel ID (first 60 bits)**: Identifies the specific channel for the message.
-* **Channel Type (last 4 bits)**: Specifies the type of data in the message.
-
 ## Benchmarks
 
-The benchmarks measure the performance for different payload sizes (64 bytes, 4 KB, and 1 MB).
-
-With the default 4kB buffers, binproto achieves a throughput of approximately 50 GB/s for both writing and reading operations.
+With the default 4 kB buffers, binproto achieves a throughput of approximately 50 GB/s for both writing and reading operations.
 
 ```
 goos: darwin
