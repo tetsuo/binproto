@@ -22,7 +22,7 @@ type Conn struct {
 
 // NewConn returns a new Conn using conn for I/O.
 func NewConn(conn io.ReadWriteCloser) *Conn {
-	r, w := NewReaderSize(bufio.NewReader(conn), 16), NewWriter(bufio.NewWriter(conn))
+	r, w := NewReaderSize(bufio.NewReader(conn), defaultBufSize), NewWriter(bufio.NewWriter(conn))
 	return &Conn{
 		Reader: *r,
 		Writer: *w,
